@@ -15,15 +15,9 @@ A lightweight, privacy-first period tracker that runs entirely in the browser (a
 
 
 
-## How to run
+## How to run locally
 
-Serve the folder over HTTP (required for the service worker / install prompt). For example:
-
-```bash
-npx serve .
-```
-
-Then open the URL in your browser. On mobile, use **Add to Home Screen** / **Install app**. Opening `index.html` via `file://` still works for browsing, but PWA install and offline caching need a local or hosted server.
+Open `index.html` in your browser. 
 
 ## Project structure
 
