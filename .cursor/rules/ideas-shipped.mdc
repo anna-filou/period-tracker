@@ -1,0 +1,28 @@
+---
+description: Remove shipped items from ideas.md when implementing backlog features
+alwaysApply: true
+---
+
+# ideas.md stays current
+
+`ideas.md` is the backlog. When you **implement** an item from that file as a real feature, **delete that item** in the same change — do not leave it listed as future work.
+
+## What counts as “implemented”
+
+- The feature works in the app (not just a plan or stub)
+- README is updated if the behavior is user-facing (see readme-keeps-pace rule)
+
+## What to remove
+
+- Delete the bullet (or section) that described the shipped idea
+- If a research section only existed to support that idea and nothing else references it, trim or remove the orphaned section too
+- Keep **Done / won’t do** and **Explicitly out of scope** entries as-is unless the decision changed
+
+## What not to do
+
+- Do not delete ideas for partial work, spikes, or “coming soon” placeholders
+- Do not delete **Safety (shipped)** or historical notes unless you're replacing them with something accurate
+
+## Example
+
+Shipping “Backup nudge on open” → remove the **Backup nudge on open** bullet under Import / export; tighten Scheduled backup (research) if it no longer lists that as planned work.

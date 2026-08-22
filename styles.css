@@ -1,0 +1,672 @@
+/* ============================================================
+   DESIGN TOKENS
+   ============================================================ */
+:root {
+  --bg:          #0d0d0f;   /* app background (near-black) */
+  --cell:        #1c1c1e;   /* a real day cell */
+  --cell-hover:  #232326;   /* day cell on hover */
+  --text:        #f4f4f5;   /* day numbers, month name */
+  --text-dim:    #b5b5b5;   /* weekday labels, year */
+  --hairline:    #26262a;   /* month divider rule */
+  --today:       #7ad0e6;   /* accent (tabs, ovulation, etc.) */
+  --period:      #e5564c;   /* a logged period day */
+  --predicted:   #7a3b38;   /* a predicted period day (muted brick) */
+
+  --fertile:            #2f7f96;   /* fertile window (past / confirmed cycles) */
+  --fertile-predicted:  #1a3d48;   /* fertile window ahead of a predicted period */
+  --ovulation:          #7ad0e6;   /* ovulation ring (past / confirmed cycles) */
+  --ovulation-predicted:#3a6a78;   /* ovulation ring for predicted cycles */
+
+  --col-gap:     6px;
+  --pad:         12px;
+  --radius:      9px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  justify-content: center;
+}
+
+.app {
+  width: 100%;
+  max-width: 460px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+/* ---- Sticky weekday header (aligns to the grids below) ---- */
+.weekdays {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--col-gap);
+  padding: 14px var(--pad) 10px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--hairline);
+}
+.weekdays span {
+  text-align: center;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+}
+
+/* ---- Scrolling month list ---- */
+.calendar {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 var(--pad) 40vh;
+  scrollbar-width: thin;
+  scrollbar-color: var(--hairline) transparent;
+}
+
+.month { border-top: 1px solid var(--hairline); }
+.month:first-child { border-top: none; }
+
+.month__label {
+  text-align: center;
+  font-size: 1.05rem;
+  font-weight: 600;
+  padding: 22px 0 16px;
+}
+.month__label .year {
+  color: var(--text-dim);
+  font-weight: 400;
+  margin-left: 6px;
+}
+
+.month__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: var(--col-gap);
+}
+
+.cell {
+  position: relative;
+  aspect-ratio: 1;
+  background: var(--cell);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 6px;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.cell:hover { background: var(--cell-hover); }
+
+.cell--empty { background: transparent; cursor: default; }
+
+.num { position: relative; z-index: 2; }
+
+/* ---- Pill (shared geometry) -----------------------------------
+   Period, predicted, and fertile days use segmented pills (one bar per
+   cell; outside ends of a run rounded).
+   ---------------------------------------------------------------- */
+.pill {
+  position: absolute;
+  top: 0; bottom: 0; left: 0; right: 0;
+  background: var(--period);
+  z-index: 0;
+}
+.pill--segmented {
+  /* stay inside the cell — no overlap into column gaps */
+  left: 0;
+  right: 0;
+}
+.pill--predicted { background: var(--predicted); }
+.pill--fertile   { background: var(--fertile); }
+.pill--fertile-predicted { background: var(--fertile-predicted); }
+
+/* Flow heaviness: bar height from the bottom (logged days only). */
+.pill--flow {
+  top: auto;
+  bottom: 0;
+}
+.pill--flow-light  { height: 33.333%; }
+.pill--flow-medium { height: 66.666%; }
+.pill--flow-heavy  { height: 100%; }
+.pill--flow { overflow: hidden; }
+
+/* Ovulation marker: a small ring near the top of the fertile cell,
+   above the pill and clear of the day number at the bottom. */
+.ovu {
+  position: absolute;
+  top: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2.5px solid var(--ovulation);
+  box-sizing: border-box;
+  z-index: 1;
+  pointer-events: none;
+}
+.ovu--predicted { border-color: var(--ovulation-predicted); }
+
+/* Excluded period: still a real logged pill, but marked "not counted"
+   with a faint diagonal hatch. overflow:hidden clips the hatch to the
+   pill's rounded shape. */
+.pill--excluded { overflow: hidden; }
+.pill--excluded::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0)        0,
+    rgba(0, 0, 0, 0)        5px,
+    rgba(0, 0, 0, 0.30)     5px,
+    rgba(0, 0, 0, 0.30)     10px
+  );
+  pointer-events: none;
+}
+
+.pill--round-left  { border-top-left-radius: var(--radius);  border-bottom-left-radius: var(--radius); }
+.pill--round-right { border-top-right-radius: var(--radius); border-bottom-right-radius: var(--radius); }
+.pill--round-top-left  { border-top-left-radius: var(--radius); }
+.pill--round-top-right { border-top-right-radius: var(--radius); }
+
+/* Today is lifted above neighbours; pills stay inset per cell. */
+.cell--today { z-index: 3; }
+.cell--today .pill { left: 0; right: 0; }
+
+/* Today ring, drawn above the pill so it stays visible on a day
+   that is both today and a period/predicted day. With segmented pills,
+   corner rounding follows the run (same as pill--round-left/right). */
+.cell--today::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 0;
+  box-shadow: inset 0 0 0 2px #fff;
+  pointer-events: none;
+  z-index: 1;
+}
+.cell--today:not(:has(.pill--segmented))::after {
+  border-radius: var(--radius);
+}
+.cell--today:has(.pill--round-left)::after {
+  border-top-left-radius: var(--radius);
+  border-bottom-left-radius: var(--radius);
+}
+.cell--today:has(.pill--round-right)::after {
+  border-top-right-radius: var(--radius);
+  border-bottom-right-radius: var(--radius);
+}
+
+/* ---- Long-press menu (exclude / include a period) ---- */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.45);
+}
+.menu {
+  position: fixed;
+  z-index: 51;
+  min-width: 220px;
+  max-width: calc(100vw - 32px);
+  background: #232326;
+  border: 1px solid #34343a;
+  border-radius: 14px;
+  padding: 14px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  color: var(--text);
+}
+.menu__title {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+.menu__btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: var(--text);
+  border: none;
+  border-radius: 9px;
+  padding: 11px 12px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+.menu__btn:hover { background: #2e2e34; }
+.menu__btn--exclude { color: #f0a24b; }   /* warm "discount" tone */
+.menu__btn--include { color: var(--today); }
+
+/* ---- Views + bottom tabs ---- */
+.view {
+  flex: 1;
+  min-height: 0;                 /* let the inner scroll area shrink */
+  display: flex;
+  flex-direction: column;
+}
+.view[hidden] { display: none; }
+
+.tabbar {
+  flex: 0 0 auto;
+  display: flex;
+  border-top: 1px solid var(--hairline);
+  background: var(--bg);
+  padding-bottom: env(safe-area-inset-bottom, 0px);  /* clear the home indicator */
+}
+.tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 9px 0 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  transition: color 0.12s ease;
+}
+.tab__icon { width: 24px; height: 24px; display: block; }
+.tab__label { font-size: inherit; }
+.tab--active { color: var(--today); }
+
+/* ---- Log summary stats (last 6 cycles) ---- */
+.stats {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 4px 4px 12px;
+  padding: 0;
+}
+.stats__tiles {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+.stats__note {
+  text-align: center;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  line-height: 1.3;
+}
+.stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 8px 10px;
+  background: var(--cell);
+  border-radius: var(--radius);
+}
+.stat__value {
+  font-size: 1.65rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  line-height: 1;
+}
+.stat:nth-child(2) .stat__value { color: #ff7a72; }
+.stat__unit {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  margin-left: 2px;
+}
+.stat__label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  letter-spacing: 0.03em;
+  text-align: center;
+  line-height: 1.25;
+}
+
+/* ---- Log cycle bar legend ---- */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 18px;
+  margin: 8px 4px;
+  padding: 12px;
+  background: var(--cell);
+  border-radius: var(--radius);
+}
+.legend__item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  color: var(--text);
+}
+.legend__swatch {
+  width: 14px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.legend__swatch--bleed { background: var(--period); }
+.legend__swatch--rest {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.22);
+}
+.legend__swatch--fertile { background: var(--fertile); }
+.legend__swatch--ov {
+  width: 3px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--ovulation);
+}
+
+/* ---- Log list ---- */
+.log {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px var(--pad) calc(24px + env(safe-area-inset-bottom, 0px));
+  scrollbar-width: thin;
+  scrollbar-color: var(--hairline) transparent;
+}
+.log__year {
+  padding: 18px 4px 6px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.log__year ~ .log__year {
+  padding-top: 22px;
+}
+.log__row {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 14px 4px;
+  border-bottom: 1px solid var(--hairline);
+}
+.log__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.log__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  min-width: 0;
+  flex-wrap: wrap;
+  font-size: 0.98rem;
+}
+.log__cycle-len {
+  color: var(--text-dim);
+  font-size: 0.98rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.log__cycle-len--current {
+  color: var(--text);
+  font-weight: 600;
+}
+.log__sep {
+  color: var(--text-dim);
+}
+.log__range {
+  min-width: 0;
+}
+.log__bleed {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  font-size: 0.98rem;
+  font-variant-numeric: tabular-nums;
+  color: #ff7a72;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.log__bleed-icon {
+  width: 0.82em;
+  height: 0.82em;
+  flex-shrink: 0;
+}
+/* excluded periods: dimmed, with a small tag */
+.log__row--excluded .log__meta { color: var(--text-dim); }
+.log__row--excluded .log__bleed { opacity: 0.65; }
+.log__row--excluded .log__cycle-len { opacity: 0.65; }
+.log__badge {
+  margin-left: 0.35em;
+  font-size: 0.66rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #f0a24b;
+  border: 1px solid #f0a24b;
+  border-radius: 999px;
+  padding: 1px 7px;
+}
+
+/* ---- Cycle bar (one per row): total length = cycle length,
+   red segment = bleeding. Longest cycle across all rows = full width. */
+.log__cycle {
+  display: block;
+}
+.cyclebar {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);   /* faint full-width track = the longest cycle */
+}
+.cyclebar--flow {
+  height: 12px;
+  border-radius: 6px;
+}
+.cyclebar--flow .cyclebar__fill { border-radius: 6px; }
+.cyclebar__fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  display: flex;
+  border-radius: 4px;
+  overflow: hidden;
+}
+/* Period episode (start→end): one flex segment per calendar day so dry gaps show. */
+.cyclebar__episode {
+  display: flex;
+  height: 100%;
+  flex: 0 0 auto;
+}
+.cyclebar__seg { flex: 1; min-width: 0; height: 100%; }
+.cyclebar__seg--bleed { background: var(--period); }
+.cyclebar__seg--gap   { background: transparent; }
+.cyclebar__seg--predicted { background: var(--predicted); }
+/* Flow heaviness in the log episode (mirrors calendar fill + step rounding). */
+.cyclebar__seg--flow-host {
+  background: transparent;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+.cyclebar__flow-fill {
+  width: 100%;
+  background: var(--period);
+  overflow: hidden;
+}
+.cyclebar__seg--predicted .cyclebar__flow-fill { background: var(--predicted); }
+.cyclebar__flow-fill--light  { height: 33.333%; }
+.cyclebar__flow-fill--medium { height: 66.666%; }
+.cyclebar__flow-fill--heavy  { height: 100%; }
+.cyclebar__flow-fill--round-top-left  { border-top-left-radius: 3px; }
+.cyclebar__flow-fill--round-top-right { border-top-right-radius: 3px; }
+.cyclebar__gap-fill {
+  width: 100%;
+  height: 33.333%;
+  background: color-mix(in srgb, var(--period) 28%, #2a2a30);
+}
+.cyclebar__rest {
+  flex: 1;
+  background: transparent;
+  box-sizing: border-box;
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  border-left: none;
+  border-radius: 0 4px 4px 0;
+}
+.cyclebar--flow .cyclebar__rest { border-radius: 0 6px 6px 0; }
+/* fertile window band: ov-fertileBefore .. ov+fertileAfter, on top of the rest */
+.cyclebar__fertile {
+  position: absolute;
+  top: 0; bottom: 0;
+  background: var(--fertile);
+  border-radius: 2px;
+}
+.cyclebar__fertile--predicted { background: var(--fertile-predicted); }
+/* ovulation marker: a thin blue tick at (cycle length - luteal) from the start */
+.cyclebar__ov {
+  position: absolute;
+  top: -2px; bottom: -2px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--ovulation);
+  transform: translateX(-50%);
+}
+.cyclebar__ov--predicted { background: var(--ovulation-predicted); }
+.log__row--excluded .cyclebar__fill,
+.log__row--excluded .cyclebar__fertile,
+.log__row--excluded .cyclebar__ov { opacity: 0.4; }
+
+.log__show-all {
+  display: block;
+  width: 100%;
+  margin: 8px 4px 20px;
+  padding: 14px 12px;
+  border: none;
+  border-radius: var(--radius);
+  background: var(--cell);
+  color: var(--today);
+  font-family: inherit;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.log__show-all:hover { background: var(--cell-hover); }
+
+.log__empty {
+  text-align: center;
+  color: var(--text-dim);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  padding: 15vh 24px 0;
+}
+
+/* ---- Settings ---- */
+.settings {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px var(--pad) calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.setrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 4px;
+  border-bottom: 1px solid var(--hairline);
+}
+.setrow__label { font-size: 0.98rem; }
+
+/* toggle switch */
+.switch { position: relative; flex: 0 0 auto; width: 46px; height: 28px; }
+.switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+.switch__track {
+  position: absolute; inset: 0;
+  background: #3a3a40;
+  border-radius: 999px;
+  transition: background 0.15s ease;
+}
+.switch__thumb {
+  position: absolute; top: 3px; left: 3px;
+  width: 22px; height: 22px;
+  background: #f4f4f5;
+  border-radius: 50%;
+  transition: transform 0.15s ease;
+}
+.switch input:checked + .switch__track { background: var(--today); }
+.switch input:checked + .switch__track .switch__thumb { transform: translateX(18px); }
+
+/* segmented control */
+.segmented {
+  display: inline-flex;
+  background: #1c1c1e;
+  border-radius: 9px;
+  padding: 3px;
+}
+.seg {
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  padding: 7px 16px;
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.seg--active { background: #3a3a40; color: var(--text); }
+
+/* backup & restore */
+.setrow--stack { flex-direction: column; align-items: stretch; gap: 12px; }
+.setrow__actions { display: flex; gap: 10px; }
+.setbtn {
+  flex: 1;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--hairline);
+  background: #1c1c1e;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.setbtn:hover { background: #232326; }
+.setbtn--danger { color: #f0a24b; border-color: #3a2a20; }
+.setnote { font-size: 0.8rem; color: var(--text-dim); }
+.setnote--ok  { color: var(--today); }
+.setnote--err { color: #f0a24b; }
+
+/* brief how-to under the controls */
+.tips {
+  padding: 22px 4px 8px;
+}
+.tips__title {
+  font-size: 0.98rem;
+  margin-bottom: 10px;
+}
+.tips__list {
+  margin: 0;
+  padding-left: 1.15em;
+  color: var(--text);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+.tips__list li + li { margin-top: 8px; }

@@ -1,0 +1,31 @@
+---
+description: Keep README.md in sync with the app whenever features change
+alwaysApply: true
+---
+
+# README stays current
+
+Whenever you add, change, or remove user-facing behavior, update `README.md` in the same change so it reflects the app as it is now.
+
+## What counts
+
+Update the README for:
+- New features or settings
+- Changed behavior (predictions, calendar, log, backup, persistence keys, etc.)
+- Removed features
+- New files or structural changes that affect how someone runs or understands the app
+
+Skip README updates for pure refactors, formatting, or internal cleanups with no user-visible difference.
+
+## How to update
+
+- Prefer editing existing sections (`Features`, `Settings`, `How it works`, etc.) over adding long new ones
+- Match the README’s current tone: short, concrete, no fluff
+- If a feature is gone, delete it from the README — do not leave stale claims
+- Storage keys, file names, and defaults mentioned in the README must match the code
+
+## Checklist before finishing feature work
+
+1. Does `Features` still list what the app actually does?
+2. Do `Settings` / `How it works` match current behavior and constants?
+3. Is anything in the README no longer true?

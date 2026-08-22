@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0d0d0f" />
+<meta name="color-scheme" content="dark" />
+<meta name="description" content="Hema — a lightweight, privacy-first period tracker that runs entirely on your device." />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Hema" />
+<title>Hema Period Tracker</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- CALENDAR VIEW -->
+    <div class="view" id="view-calendar">
+      <div class="weekdays" id="weekdays"></div>
+      <div class="calendar" id="calendar"></div>
+    </div>
+
+    <!-- LOG VIEW -->
+    <div class="view" id="view-log" hidden>
+      <div class="log" id="log"></div>
+    </div>
+
+    <!-- SETTINGS VIEW -->
+    <div class="view" id="view-settings" hidden>
+      <div class="settings">
+        <div class="setrow">
+          <div class="setrow__label">Show ovulation &amp; fertile window</div>
+          <label class="switch">
+            <input type="checkbox" id="set-fertility" />
+            <span class="switch__track"><span class="switch__thumb"></span></span>
+          </label>
+        </div>
+        <div class="setrow">
+          <div class="setrow__label">Track flow heaviness</div>
+          <label class="switch">
+            <input type="checkbox" id="set-flow" />
+            <span class="switch__track"><span class="switch__thumb"></span></span>
+          </label>
+        </div>
+        <div class="setrow">
+          <div class="setrow__label">First day of week</div>
+          <div class="segmented" id="set-weekstart">
+            <button class="seg" data-val="1">Monday</button>
+            <button class="seg" data-val="0">Sunday</button>
+          </div>
+        </div>
+        <div class="setrow">
+          <div class="setrow__label">Predict months ahead</div>
+          <div class="segmented" id="set-predict">
+            <button class="seg" data-val="3">3</button>
+            <button class="seg" data-val="6">6</button>
+            <button class="seg" data-val="12">12</button>
+          </div>
+        </div>
+        <div class="setrow">
+          <div class="setrow__label">Log cycles shown</div>
+          <div class="segmented" id="set-logcycles">
+            <button class="seg" data-val="12">12</button>
+            <button class="seg" data-val="24">24</button>
+            <button class="seg" data-val="all">All</button>
+          </div>
+        </div>
+        <div class="setrow setrow--stack">
+          <div class="setrow__label">Backup &amp; restore</div>
+          <div class="setrow__actions">
+            <button class="setbtn" id="set-export">Export JSON</button>
+            <button class="setbtn setbtn--danger" id="set-restore">Restore…</button>
+          </div>
+          <div class="setnote" id="set-status" hidden></div>
+          <input type="file" id="set-file" accept="application/json,.json" hidden />
+        </div>
+
+        <div class="tips">
+          <div class="tips__title">Tips</div>
+          <ul class="tips__list">
+            <li>With flow tracking on, tap a logged day to cycle light → medium → heavy → unlog. Older logged days without flow data show as medium.</li>
+            <li>Long-press (or right-click) a logged period day to exclude that whole period from averages and predictions.</li>
+            <li>Tap the Calendar icon again to jump back to today.</li>
+            <li>Periods with up to 3 gap days still count as one period.</li>
+            <li>Muted colored tiles are predictions.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM TABS — icons inlined from ui/ so they work over file:// and inherit tab color -->
+    <nav class="tabbar">
+      <button class="tab tab--active" data-view="calendar" aria-label="Calendar">
+        <svg class="tab__icon" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M38.4948 7.20977c-0.0077 -0.60576 -0.0236 -1.1549 -0.043 -1.63805 -0.0809 -2.01015 -1.4581 -3.8691 -3.7483 -4.00716 -0.4826 -0.02909 -1.0463 -0.04698 -1.7035 -0.04698s-1.2209 0.01789 -1.7035 0.04698c-2.2902 0.13806 -3.6674 1.99701 -3.7483 4.00716 -0.0119 0.29709 -0.0225 0.61914 -0.0307 0.96395C26.4048 6.51265 25.2326 6.5 24 6.5c-1.2326 0 -2.4048 0.01265 -3.5175 0.03567 -0.0082 -0.34481 -0.0188 -0.66686 -0.0307 -0.96395 -0.0809 -2.01015 -1.4581 -3.8691 -3.7483 -4.00716 -0.4826 -0.02909 -1.0463 -0.04698 -1.7035 -0.04698s-1.2209 0.01789 -1.7035 0.04698c-2.2902 0.13806 -3.66739 1.99701 -3.74828 4.00716 -0.01944 0.48315 -0.0353 1.03229 -0.04306 1.63805 -0.60271 0.0673 -1.15314 0.13523 -1.65204 0.20173 -2.86175 0.38146 -5.06853 2.55403 -5.47897 5.4181C1.95694 15.7408 1.5 20.3364 1.5 26.5c0 6.1636 0.45694 10.7592 0.87415 13.6704 0.41044 2.8641 2.61722 5.0366 5.47896 5.4181C11.0517 46.0149 16.3682 46.5 24 46.5c7.6318 0 12.9483 -0.4851 16.1469 -0.9115 2.8617 -0.3815 5.0685 -2.554 5.479 -5.4181 0.4172 -2.9112 0.8741 -7.5068 0.8741 -13.6704 0 -6.1636 -0.4569 -10.7592 -0.8741 -13.6704 -0.4105 -2.86407 -2.6173 -5.03664 -5.479 -5.4181 -0.4989 -0.0665 -1.0494 -0.13444 -1.6521 -0.20173ZM20 25c0 -1.1046 0.8954 -2 2 -2h4c1.1046 0 2 0.8954 2 2s-0.8954 2 -2 2h-4c-1.1046 0 -2 -0.8954 -2 -2Zm13 -2c-1.1046 0 -2 0.8954 -2 2s0.8954 2 2 2h4c1.1046 0 2 -0.8954 2 -2s-0.8954 -2 -2 -2h-4Zm-16 2c0 -1.1046 -0.8954 -2 -2 -2h-4c-1.10457 0 -2 0.8954 -2 2s0.89543 2 2 2h4c1.1046 0 2 -0.8954 2 -2Zm5 8c-1.1046 0 -2 0.8954 -2 2s0.8954 2 2 2h4c1.1046 0 2 -0.8954 2 -2s-0.8954 -2 -2 -2h-4Zm9 2c0 -1.1046 0.8954 -2 2 -2h4c1.1046 0 2 0.8954 2 2s-0.8954 2 -2 2h-4c-1.1046 0 -2 -0.8954 -2 -2Zm-16 -2c1.1046 0 2 0.8954 2 2s-0.8954 2 -2 2h-4c-1.10457 0 -2 -0.8954 -2 -2s0.89543 -2 2 -2h4Z"/>
+        </svg>
+        <span class="tab__label">Calendar</span>
+      </button>
+      <button class="tab" data-view="log" aria-label="Log">
+        <svg class="tab__icon" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M31.6382 4.34736c0.1954 -1.7311 -1.1194 -3.26494 -2.8612 -3.30093C27.352 1.01699 25.7652 1 24.0008 1c-1.7651 0 -3.3524 0.017 -4.7779 0.04647 -1.7417 0.036 -3.0566 1.56983 -2.8611 3.30092l0.2246 1.98918C16.7576 7.85355 18.0408 9 19.5674 9h8.8652c1.5266 0 2.8097 -1.14645 2.981 -2.66343l0.2246 -1.98921Zm2.9811 0.33656c0.036 -0.31876 0.0462 -0.63468 0.0323 -0.94564 1.5106 0.07742 2.762 0.16638 3.7853 0.25524 3.0231 0.26252 5.3144 2.54351 5.5698 5.57523C44.2528 12.4911 44.5 17.3325 44.5 25c0 7.6674 -0.2472 12.5089 -0.4933 15.4312 -0.2554 3.0317 -2.5467 5.3127 -5.5698 5.5753 -2.8376 0.2464 -7.4292 0.4935 -14.4369 0.4935s-11.5993 -0.2471 -14.43686 -0.4935c-3.02313 -0.2626 -5.31444 -2.5436 -5.56982 -5.5753C3.74717 37.5089 3.5 32.6674 3.5 25c0 -7.6675 0.24717 -12.509 0.49332 -15.43125 0.25538 -3.03172 2.54669 -5.31271 5.56982 -5.57523 1.02326 -0.08886 2.27466 -0.17782 3.78526 -0.25524 -0.0139 0.31096 -0.0037 0.6269 0.0323 0.94567l0.2246 1.98918C13.9479 9.70709 16.5142 12 19.5674 12h8.8652c3.0532 0 5.6195 -2.29291 5.9621 -5.32687l0.2246 -1.98921Z"/>
+        </svg>
+        <span class="tab__label">Log</span>
+      </button>
+      <button class="tab" data-view="settings" aria-label="Settings">
+        <svg class="tab__icon" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M18.98 2.458c0.805 -0.423 2.358 -0.958 5.02 -0.958s4.215 0.535 5.022 0.958c0.612 0.32 0.97 0.83 1.174 1.256 0.29 0.605 0.925 1.97 1.48 3.449a18.483 18.483 0 0 1 3.063 1.771c1.56 -0.26 3.061 -0.39 3.731 -0.443 0.47 -0.036 1.09 0.02 1.675 0.39 0.77 0.486 2.01 1.563 3.34 3.869 1.332 2.306 1.644 3.918 1.681 4.828 0.029 0.69 -0.233 1.255 -0.5 1.645a44.816 44.816 0 0 1 -2.25 3.01 18.738 18.738 0 0 1 0 3.534 44.867 44.867 0 0 1 2.25 3.01c0.267 0.39 0.529 0.954 0.5 1.645 -0.037 0.91 -0.35 2.522 -1.68 4.828 -1.332 2.306 -2.572 3.383 -3.341 3.87 -0.584 0.37 -1.204 0.425 -1.675 0.389a44.829 44.829 0 0 1 -3.731 -0.443 18.478 18.478 0 0 1 -3.063 1.771 44.816 44.816 0 0 1 -1.48 3.449c-0.204 0.426 -0.562 0.935 -1.174 1.256 -0.807 0.422 -2.36 0.958 -5.022 0.958 -2.662 0 -4.215 -0.535 -5.022 -0.958 -0.612 -0.32 -0.97 -0.83 -1.174 -1.256 -0.29 -0.605 -0.925 -1.97 -1.48 -3.449a18.48 18.48 0 0 1 -3.063 -1.771c-1.56 0.26 -3.062 0.39 -3.732 0.443 -0.47 0.036 -1.09 -0.02 -1.674 -0.39 -0.77 -0.486 -2.01 -1.563 -3.34 -3.869 -1.332 -2.306 -1.645 -3.918 -1.682 -4.828 -0.028 -0.69 0.234 -1.255 0.5 -1.645a44.84 44.84 0 0 1 2.25 -3.01 18.727 18.727 0 0 1 0 -3.534 44.844 44.844 0 0 1 -2.25 -3.01c-0.266 -0.39 -0.528 -0.954 -0.5 -1.645 0.038 -0.91 0.35 -2.522 1.681 -4.828 1.331 -2.306 2.572 -3.383 3.341 -3.87 0.584 -0.37 1.204 -0.425 1.675 -0.389 0.67 0.052 2.17 0.184 3.73 0.443a18.48 18.48 0 0 1 3.064 -1.771 44.852 44.852 0 0 1 1.48 -3.449c0.204 -0.426 0.562 -0.935 1.174 -1.256ZM32 24a8 8 0 1 1 -16 0 8 8 0 0 1 16 0Z"/>
+        </svg>
+        <span class="tab__label">Settings</span>
+      </button>
+    </nav>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
