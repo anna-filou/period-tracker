@@ -1,5 +1,5 @@
 /* Hema service worker — caches the app shell for offline use. */
-const CACHE = "hema-v2";
+const CACHE = "hema-v8";
 const SHELL = [
   "./",
   "./index.html",
